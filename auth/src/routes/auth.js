@@ -12,7 +12,10 @@ router.get(
   '/me',
   asyncHandler(async (req, res, next) => {
     const user = req.user;
-    res.send(user);
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
   })
 );
 
@@ -31,7 +34,7 @@ router.post(
       password,
     });
 
-    res.status(201).json(user);
+    sendTokenResponse(user, 201, res);
   })
 );
 
@@ -61,7 +64,7 @@ router.post(
       return next(new ErrorResponse('Invalid credentials', 401));
     }
 
-    res.status(200).json(user);
+    sendTokenResponse(user, 200, res);
   })
 );
 
@@ -72,8 +75,33 @@ router.post(
   '/logout',
   asyncHandler(async (req, res, next) => {
     // to do
-    res.send('Yooooo');
+    res.cookie('token', 'none', {
+      expires: new Date(Date.now() + 10 * 1000),
+      httpOnly: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {},
+    });
   })
 );
+
+// get token from model, create cookie and send response
+const sendTokenResponse = (user, statusCode, res) => {
+  // create token
+  const token = user.getSignedJwtToken();
+
+  const options = {
+    expires: new Date(Date.now() + 15 * 60 * 1000),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+  };
+
+  res.status(statusCode).cookie('access_token', token, options).json({
+    success: true,
+    token,
+  });
+};
 
 module.exports = router;

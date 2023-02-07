@@ -30,6 +30,10 @@ const UserSchema = new mongoose.Schema(
     resetPasswordToken: String,
     resetPasswordExpire: Date,
     lastLogin: Date,
+    hasAccess: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
@@ -47,6 +51,13 @@ UserSchema.pre('save', async function (next) {
 // match user entered password to hashed password in database
 UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// sign JWT and return
+UserSchema.methods.getSignedJwtToken = function () {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: 15 * 60 * 1000,
+  });
 };
 
 module.exports = mongoose.model('User', UserSchema);
